@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,9 @@ import {
 import { createThumbnail } from 'react-native-create-thumbnail';
 import Colors from '../theme/colors';
 import { useNavigation } from '@react-navigation/native';
+import Orientation from 'react-native-orientation-locker';
+import { useFocusEffect } from '@react-navigation/native';
+import CommonHeader from '../components/Header';
 
 
 const VideoListScreen = ({ route }: any) => {
@@ -21,6 +24,15 @@ const VideoListScreen = ({ route }: any) => {
     loadThumbnails();
   }, []);
 
+ 
+  useFocusEffect(
+    useCallback(() => {
+      // 1. Lock to Portrait when the screen is focused
+      Orientation.lockToPortrait();
+      return () => {
+      };
+    }, [])
+  );
   const loadThumbnails = async () => {
     const updatedVideos = await Promise.all(
       videos.map(async (video: any) => {
@@ -46,9 +58,12 @@ const VideoListScreen = ({ route }: any) => {
   };
 
   return (
+    <>
+     <CommonHeader
+        title={folderName}
+        onSearchPress={() => console.log('Search clicked')}
+      />
     <View style={styles.container}>
-      <Text style={styles.title}>{folderName}</Text>
-
       <FlatList
         data={videoList}
         keyExtractor={(item, index) => index.toString()}
@@ -79,6 +94,7 @@ const VideoListScreen = ({ route }: any) => {
         )}
       />
     </View>
+    </>
   );
 };
 

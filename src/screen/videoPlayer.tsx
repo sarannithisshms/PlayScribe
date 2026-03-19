@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import React, { useRef, useState, } from 'react';
+import { View, StyleSheet, TouchableOpacity, Text ,StatusBar} from 'react-native';
 import Video from 'react-native-video';
 import Slider from '@react-native-community/slider';
 import { useEffect } from 'react';
@@ -34,6 +34,7 @@ export default function CustomVideoPlayer({ route }: any) {
 
   return (
     <View style={styles.container}>
+      <StatusBar hidden={true} />
       <Video
         ref={playerRef}
         source={{ uri:finalPath }}

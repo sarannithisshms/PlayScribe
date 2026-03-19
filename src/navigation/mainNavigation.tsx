@@ -13,14 +13,13 @@ const Stack = createNativeStackNavigator();
 function MainNavigation() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Splash">
+      <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false }}>
         {/* Hide header for Splash Screen */}
         <Stack.Screen 
           name="Splash" 
           component={SplashScreen} 
-          options={{ headerShown: false }} 
         />
-        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Home" component={HomeScreen}    />
         <Stack.Screen name="VideoList" component={VideoListScreen} />
         <Stack.Screen name="CustomVideoPlayer" component={CustomVideoPlayer} />
       </Stack.Navigator>

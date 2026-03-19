@@ -12,7 +12,7 @@ import RNFS from 'react-native-fs';
 import CommonLoader from '../components/CommonLoader';
 import { useNavigation } from '@react-navigation/native';
 import Colors from '../theme/colors';
-
+import CommonHeader from '../components/Header';
 
 const VideoFoldersOnly = () => {
   const [folders, setFolders] = useState<any[]>([]);
@@ -44,8 +44,6 @@ const VideoFoldersOnly = () => {
     const folderMap: any = {};
 
     const scan = async (path: string) => {
-      
-
       try {
         const items = await RNFS.readDir(path);
 
@@ -91,30 +89,38 @@ const VideoFoldersOnly = () => {
   };
 
   return (
-    <View style={styles.container}>
-      {loading && <CommonLoader />}
-      <FlatList
-        data={folders}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-          style={styles.card}
-          onPress={() =>
-            navigation.navigate('VideoList', {
-              videos: item.files,
-              folderName: item.name,
-            })
-          }
-        >
-          <Text style={styles.icon}>📁</Text>
-          <View>
-            <Text style={styles.folderName}>{item.name}</Text>
-            <Text style={styles.count}>{item.count} Videos</Text>
-          </View>
-        </TouchableOpacity>
-        )}
+    <>
+      <CommonHeader
+        title="Folders"
+        onSearchPress={() => console.log('Search clicked')}
+        showBack={false}
       />
-    </View>
+      <View style={styles.container}>
+        {loading && <CommonLoader />}
+
+        <FlatList
+          data={folders}
+          keyExtractor={(item, index) => index.toString()}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() =>
+                navigation.navigate('VideoList', {
+                  videos: item.files,
+                  folderName: item.name,
+                })
+              }
+            >
+              <Text style={styles.icon}>📁</Text>
+              <View>
+                <Text style={styles.folderName}>{item.name}</Text>
+                <Text style={styles.count}>{item.count} Videos</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+        />
+      </View>
+    </>
   );
 };
 
