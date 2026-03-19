@@ -6,8 +6,7 @@ import { useEffect } from 'react';
 import Orientation from 'react-native-orientation-locker';
 import colors from '../theme/colors';
 
-export default function CustomVideoPlayer({ route }: any) {
-  const { videoPath, videoName } = route.params;
+export default function HomeScreen() {
   const playerRef = useRef<any>(null);
 
   const [paused, setPaused] = useState(false);
@@ -28,39 +27,41 @@ export default function CustomVideoPlayer({ route }: any) {
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
-  const finalPath = videoPath.startsWith('file://')
-  ? videoPath
-  : 'file://' + videoPath;
 
   return (
     <View style={styles.container}>
       <Video
         ref={playerRef}
-        source={{ uri:finalPath }}
+        source={{ uri: 'https://www.w3schools.com/html/mov_bbb.mp4' }}
         style={styles.video}
-        resizeMode="contain"
+        resizeMode="cover"
         paused={paused}
-        controls={false}
         onProgress={(data) => {
-          if (!isSliding) {
-            setCurrentTime(data.currentTime);
-          }
-        }}
-        onLoad={(data) => setDuration(data.duration)}
+            if (!isSliding) {
+              setCurrentTime(data.currentTime);
+            }
+          }}
+        onLoad={data => setDuration(data.duration)}
       />
 
+      {/* Controls Overlay */}
       <View style={styles.controls}>
-      <Text>{videoName}</Text>
+        {/* <View style={styles.subtitleContainer}>
+        <Text style={styles.subtitleText}>
+          AI Subtitle will appear here
+        </Text>
+      </View> */}
+        {/* Progress Bar */}
         <Slider
           style={{ width: '100%' }}
           minimumValue={0}
           maximumValue={duration}
           value={currentTime}
           onSlidingStart={() => setIsSliding(true)}
-          onValueChange={(value) => {
+          onValueChange={value => {
             playerRef.current.seek(value);
           }}
-          onSlidingComplete={(value) => {
+          onSlidingComplete={value => {
             playerRef.current.seek(value);
             setIsSliding(false);
           }}
@@ -69,27 +70,37 @@ export default function CustomVideoPlayer({ route }: any) {
           thumbTintColor={colors.white}
         />
 
+        {/* Time Display */}
         <View style={styles.timeRow}>
           <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
           <Text style={styles.timeText}>{formatTime(duration)}</Text>
         </View>
 
         <View style={styles.buttonControl}>
-          <TouchableOpacity onPress={() => playerRef.current.seek(currentTime - 10)}>
+          {/* Back 10s */}
+          <TouchableOpacity
+            onPress={() => playerRef.current.seek(currentTime - 10)}
+          >
             <Text style={styles.controlText}>⏪ 10s</Text>
           </TouchableOpacity>
 
+          {/* Play / Pause */}
           <TouchableOpacity onPress={() => setPaused(!paused)}>
             <Text style={styles.controlText}>
               {paused ? '▶️ Play' : '⏸ Pause'}
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => playerRef.current.seek(currentTime + 10)}>
+          {/* Forward 10s */}
+          <TouchableOpacity
+            onPress={() => playerRef.current.seek(currentTime + 10)}
+          >
             <Text style={styles.controlText}>10s ⏩</Text>
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* AI Subtitle Overlay */}
     </View>
   );
 }

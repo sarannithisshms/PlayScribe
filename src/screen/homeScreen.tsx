@@ -1,153 +1,146 @@
-import React, { useRef, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
-import Video from 'react-native-video';
-import Slider from '@react-native-community/slider';
-import { useEffect } from 'react';
-import Orientation from 'react-native-orientation-locker';
-import colors from '../theme/colors';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  PermissionsAndroid,
+  Platform,
+  StyleSheet,
+  TouchableOpacity,
+} from 'react-native';
+import RNFS from 'react-native-fs';
+import CommonLoader from '../components/CommonLoader';
+import { useNavigation } from '@react-navigation/native';
+import Colors from '../theme/colors';
 
-export default function HomeScreen() {
-  const playerRef = useRef<any>(null);
 
-  const [paused, setPaused] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [isSliding, setIsSliding] = useState(false);
+const VideoFoldersOnly = () => {
+  const [folders, setFolders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const navigation = useNavigation<any>();
 
   useEffect(() => {
-    if (Orientation?.lockToLandscape) {
-        Orientation.lockToLandscape();
-      }
-    setPaused(false); // auto play
+    requestPermission();
   }, []);
 
-  const formatTime = (time: number) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  const requestPermission = async () => {
+    if (Platform.OS === 'android') {
+      const permission =
+        Platform.Version >= 33
+          ? PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO
+          : PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
+
+      const granted = await PermissionsAndroid.request(permission);
+
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        scanFolders();
+      }
+    } else {
+      scanFolders();
+    }
   };
 
+  const scanFolders = async () => {
+    const folderMap: any = {};
+
+    const scan = async (path: string) => {
+      
+
+      try {
+        const items = await RNFS.readDir(path);
+
+        for (const item of items) {
+          if (item.isDirectory()) {
+            await scan(item.path);
+          } else {
+            if (
+              item.name.endsWith('.mp4') ||
+              item.name.endsWith('.mkv') ||
+              item.name.endsWith('.avi') ||
+              item.name.endsWith('.mov')
+            ) {
+              const folderPath = item.path.substring(
+                0,
+                item.path.lastIndexOf('/'),
+              );
+
+              if (!folderMap[folderPath]) {
+                folderMap[folderPath] = [];
+              }
+
+              folderMap[folderPath].push(item);
+            }
+          }
+        }
+      } catch (error) {
+        console.log('Skip:', path);
+      }
+    };
+
+    await scan(RNFS.ExternalStorageDirectoryPath);
+    setLoading(true);
+    const folderArray = Object.keys(folderMap).map(path => ({
+      name: path.split('/').pop(),
+      count: folderMap[path].length,
+      path,
+      files: folderMap[path],
+    }));
+
+    setFolders(folderArray);
+    setLoading(false);
+  };
 
   return (
     <View style={styles.container}>
-      <Video
-        ref={playerRef}
-        source={{ uri: 'https://www.w3schools.com/html/mov_bbb.mp4' }}
-        style={styles.video}
-        resizeMode="cover"
-        paused={paused}
-        onProgress={(data) => {
-            if (!isSliding) {
-              setCurrentTime(data.currentTime);
-            }
-          }}
-        onLoad={data => setDuration(data.duration)}
+      {loading && <CommonLoader />}
+      <FlatList
+        data={folders}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+          style={styles.card}
+          onPress={() =>
+            navigation.navigate('VideoList', {
+              videos: item.files,
+              folderName: item.name,
+            })
+          }
+        >
+          <Text style={styles.icon}>📁</Text>
+          <View>
+            <Text style={styles.folderName}>{item.name}</Text>
+            <Text style={styles.count}>{item.count} Videos</Text>
+          </View>
+        </TouchableOpacity>
+        )}
       />
-
-      {/* Controls Overlay */}
-      <View style={styles.controls}>
-        {/* <View style={styles.subtitleContainer}>
-        <Text style={styles.subtitleText}>
-          AI Subtitle will appear here
-        </Text>
-      </View> */}
-        {/* Progress Bar */}
-        <Slider
-          style={{ width: '100%' }}
-          minimumValue={0}
-          maximumValue={duration}
-          value={currentTime}
-          onSlidingStart={() => setIsSliding(true)}
-          onValueChange={value => {
-            playerRef.current.seek(value);
-          }}
-          onSlidingComplete={value => {
-            playerRef.current.seek(value);
-            setIsSliding(false);
-          }}
-          minimumTrackTintColor={colors.primary}
-          maximumTrackTintColor={colors.sliderInactive}
-          thumbTintColor={colors.white}
-        />
-
-        {/* Time Display */}
-        <View style={styles.timeRow}>
-          <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
-          <Text style={styles.timeText}>{formatTime(duration)}</Text>
-        </View>
-
-        <View style={styles.buttonControl}>
-          {/* Back 10s */}
-          <TouchableOpacity
-            onPress={() => playerRef.current.seek(currentTime - 10)}
-          >
-            <Text style={styles.controlText}>⏪ 10s</Text>
-          </TouchableOpacity>
-
-          {/* Play / Pause */}
-          <TouchableOpacity onPress={() => setPaused(!paused)}>
-            <Text style={styles.controlText}>
-              {paused ? '▶️ Play' : '⏸ Pause'}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Forward 10s */}
-          <TouchableOpacity
-            onPress={() => playerRef.current.seek(currentTime + 10)}
-          >
-            <Text style={styles.controlText}>10s ⏩</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* AI Subtitle Overlay */}
     </View>
   );
-}
+};
+
+export default VideoFoldersOnly;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: Colors.primary,
+    padding: 20,
   },
-  video: {
-    //   width: '100%',
-    //   height: 300,
-    ...StyleSheet.absoluteFillObject,
-  },
-  controls: {
-    position: 'absolute',
-    bottom: 20,
-    width: '100%',
-    backgroundColor: 'transparent',
-  },
-  controlText: {
-    color: colors.textPrimary,
-    fontSize: 16,
-  },
-  timeRow: {
+  card: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 10,
+    alignItems: 'center',
+    marginBottom: 25,
   },
-  timeText: {
-    color: colors.textPrimary,
+  icon: {
+    fontSize: 42,
+    marginRight: 15,
   },
-  subtitleContainer: {
-    position: 'absolute',
-    bottom: 60,
-    alignSelf: 'center',
+  folderName: {
+    fontSize: 20,
+    fontWeight: '600',
   },
-  subtitleText: {
-    color: colors.textPrimary,
-    fontSize: 18,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    padding: 6,
-    borderRadius: 5,
-  },
-  buttonControl: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 10,
+  count: {
+    fontSize: 15,
+    color: '#888',
   },
 });
